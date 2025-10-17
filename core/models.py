@@ -23,6 +23,7 @@ class URL(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     expires_at = db.Column(db.DateTime, nullable=True)
     click_count = db.Column(db.Integer, default=0)
+    password = db.Column(db.String(255), nullable=True)
     
     def is_expired(self):
         """Check if URL has expired."""

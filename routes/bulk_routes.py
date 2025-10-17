@@ -34,6 +34,7 @@ def bulk_shorten_urls():
         try:
             original_url = url_data['url']
             expires_in_days = url_data.get('expires_in_days')
+            password = url_data.get('password')
             
             # Security checks
             if is_malicious_url(original_url):
@@ -66,11 +67,12 @@ def bulk_shorten_urls():
             if expires_in_days:
                 expires_at = datetime.utcnow() + timedelta(days=expires_in_days)
             
-            url_obj = URL(original_url=original_url, short_code=short_code, expires_at=expires_at)
+            url_obj = URL(original_url=original_url, short_code=short_code, expires_at=expires_at, password=password)
             db.session.add(url_obj)
             
             response_data = url_response_schema.dump(url_obj)
             response_data['short_url'] = f"{request.host_url}{short_code}"
+            response_data['has_password'] = bool(password)
             results.append(response_data)
             
         except Exception as e:

@@ -7,9 +7,11 @@ class URLCreateSchema(Schema):
     Fields:
         url: Required valid URL string (1-2048 characters)
         expires_in_days: Optional expiration in days
+        password: Optional password protection
     """
     url = fields.Url(required=True, validate=validate.Length(min=1, max=2048))
     expires_in_days = fields.Int(validate=validate.Range(min=1, max=365), missing=None)
+    password = fields.Str(validate=validate.Length(min=1, max=255), missing=None)
 
 class BulkURLCreateSchema(Schema):
     """Schema for bulk URL creation requests.
@@ -18,6 +20,14 @@ class BulkURLCreateSchema(Schema):
         urls: List of URL objects to shorten
     """
     urls = fields.List(fields.Nested(URLCreateSchema), required=True, validate=validate.Length(min=1, max=100))
+
+class PasswordValidationSchema(Schema):
+    """Schema for password validation requests.
+    
+    Fields:
+        password: Required password string
+    """
+    password = fields.Str(required=True)
 
 class URLResponseSchema(Schema):
     """Schema for serializing URL response data.
@@ -30,6 +40,7 @@ class URLResponseSchema(Schema):
         created_at: Creation timestamp
         expires_at: Expiration timestamp
         click_count: Number of clicks
+        has_password: Whether URL is password protected
     """
     id = fields.Int()
     original_url = fields.Str()
@@ -38,3 +49,4 @@ class URLResponseSchema(Schema):
     created_at = fields.DateTime()
     expires_at = fields.DateTime()
     click_count = fields.Int()
+    has_password = fields.Bool()

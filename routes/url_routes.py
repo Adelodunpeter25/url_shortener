@@ -56,6 +56,7 @@ def shorten_url():
     
     original_url = data['url']
     expires_in_days = data.get('expires_in_days')
+    password = data.get('password')
     
     # Security checks
     if is_malicious_url(original_url):
@@ -85,12 +86,13 @@ def shorten_url():
         expires_at = datetime.utcnow() + timedelta(days=expires_in_days)
     
     try:
-        url_obj = URL(original_url=original_url, short_code=short_code, expires_at=expires_at)
+        url_obj = URL(original_url=original_url, short_code=short_code, expires_at=expires_at, password=password)
         db.session.add(url_obj)
         db.session.commit()
         
         response_data = url_response_schema.dump(url_obj)
         response_data['short_url'] = f"{request.host_url}{short_code}"
+        response_data['has_password'] = bool(password)
         return jsonify(response_data)
     except IntegrityError:
         db.session.rollback()
@@ -105,6 +107,7 @@ def redirect_url(code):
         
     Returns:
         HTTP redirect to the original URL if found
+        Password prompt if URL is password protected
         404 JSON error response if code not found
     """
     url_obj = URL.query.filter_by(short_code=code).first()
@@ -114,6 +117,51 @@ def redirect_url(code):
     if url_obj.is_expired():
         return jsonify({"error": "URL has expired"}), 410
     
+    # Check if password protected
+    if url_obj.password:
+        return jsonify({
+            "password_required": True,
+            "message": "This URL is password protected",
+            "verify_url": f"{request.host_url}verify/{code}"
+        }), 401
+    
+    # Track analytics and redirect
+    return _track_and_redirect(url_obj)
+
+@url_bp.route('/verify/<code>', methods=['POST'])
+def verify_password(code):
+    """Verify password for protected URL.
+    
+    Args:
+        code: The short code to verify
+        
+    Returns:
+        HTTP redirect if password correct
+        401 error if password incorrect
+    """
+    from core.schemas import PasswordValidationSchema
+    password_schema = PasswordValidationSchema()
+    
+    try:
+        data = password_schema.load(request.get_json())
+    except ValidationError as err:
+        return jsonify({"error": err.messages}), 400
+    
+    url_obj = URL.query.filter_by(short_code=code).first()
+    if not url_obj:
+        return jsonify({"error": "URL not found"}), 404
+        
+    if url_obj.is_expired():
+        return jsonify({"error": "URL has expired"}), 410
+    
+    if url_obj.password != data['password']:
+        return jsonify({"error": "Incorrect password"}), 401
+    
+    # Track analytics and redirect
+    return _track_and_redirect(url_obj)
+
+def _track_and_redirect(url_obj):
+    """Helper function to track analytics and redirect."""
     # Track analytics
     analytics = ClickAnalytics(
         url_id=url_obj.id,

@@ -17,6 +17,7 @@ A feature-rich Flask-based URL shortener service with analytics, QR codes, bulk 
 - ✅ QR code generation
 - ✅ URL validation and reachability checks
 - ✅ Malicious URL detection
+- ✅ Password protection (optional)
 - ✅ Rate limiting (10/min for shortening, 100/hour global)
 
 ### Security & Performance
@@ -61,13 +62,24 @@ Content-Type: application/json
 
 {
   "url": "https://example.com",
-  "expires_in_days": 30  // Optional (1-365 days)
+  "expires_in_days": 30,  // Optional (1-365 days)
+  "password": "secret123"  // Optional password protection
 }
 ```
 
 #### Redirect to Original URL
 ```bash
 GET /<code>
+```
+
+#### Verify Password for Protected URL
+```bash
+POST /verify/<code>
+Content-Type: application/json
+
+{
+  "password": "secret123"
+}
 ```
 
 ### Advanced Endpoints
@@ -130,6 +142,22 @@ curl http://localhost:5000/qr/abc123
 curl http://localhost:5000/analytics/abc123
 ```
 
+### Password Protected URL
+```bash
+# Create password protected URL
+curl -X POST http://localhost:5000/shorten \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com", "password": "secret123"}'
+
+# Access protected URL (returns password prompt)
+curl http://localhost:5000/abc123
+
+# Verify password
+curl -X POST http://localhost:5000/verify/abc123 \
+  -H "Content-Type: application/json" \
+  -d '{"password": "secret123"}'
+```
+
 ## Response Examples
 
 ### Successful URL Shortening
@@ -141,7 +169,17 @@ curl http://localhost:5000/analytics/abc123
   "short_url": "http://localhost:5000/abc123",
   "created_at": "2024-01-01T12:00:00",
   "expires_at": "2024-01-31T12:00:00",
-  "click_count": 0
+  "click_count": 0,
+  "has_password": true
+}
+```
+
+### Password Protected URL Access
+```json
+{
+  "password_required": true,
+  "message": "This URL is password protected",
+  "verify_url": "http://localhost:5000/verify/abc123"
 }
 ```
 
@@ -185,6 +223,7 @@ SECRET_KEY=your-secret-key-here
 
 - **URL Validation**: Checks if URLs are reachable
 - **Malicious URL Detection**: Basic blacklist and keyword filtering
+- **Password Protection**: Optional password security for URLs
 - **Rate Limiting**: Prevents abuse and spam
 - **Input Validation**: Comprehensive request validation
 - **Expiration Handling**: Automatic cleanup of expired URLs
@@ -201,6 +240,7 @@ SECRET_KEY=your-secret-key-here
 ## Error Handling
 
 - **400**: Invalid URL or validation error
+- **401**: Password required for protected URL
 - **404**: Short code not found
 - **410**: URL has expired
 - **429**: Rate limit exceeded
