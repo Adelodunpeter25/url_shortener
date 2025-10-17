@@ -2,15 +2,19 @@
 from flask import Blueprint, request, redirect, jsonify
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from core.models import db, URL
-from core.schemas import URLCreateSchema, URLResponseSchema
+from core.models import db, URL, ClickAnalytics
+from core.schemas import URLCreateSchema, URLResponseSchema, BulkURLCreateSchema
 from utils.url_generator import generate_short_code
+from utils.validators import is_url_reachable, is_malicious_url
+from utils.qr_generator import generate_qr_code
 from marshmallow import ValidationError
 from sqlalchemy.exc import IntegrityError
+from datetime import datetime, timedelta
 
 url_bp = Blueprint('url', __name__)
 url_create_schema = URLCreateSchema()
 url_response_schema = URLResponseSchema()
+bulk_create_schema = BulkURLCreateSchema()
 
 limiter = Limiter(
     key_func=get_remote_address,
@@ -51,10 +55,18 @@ def shorten_url():
         return jsonify({"error": err.messages}), 400
     
     original_url = data['url']
+    expires_in_days = data.get('expires_in_days')
+    
+    # Security checks
+    if is_malicious_url(original_url):
+        return jsonify({"error": "URL appears to be malicious"}), 400
+        
+    if not is_url_reachable(original_url):
+        return jsonify({"error": "URL is not reachable"}), 400
     
     # Check if URL already exists
     existing = URL.query.filter_by(original_url=original_url).first()
-    if existing:
+    if existing and not existing.is_expired():
         response_data = url_response_schema.dump(existing)
         response_data['short_url'] = f"{request.host_url}{existing.short_code}"
         return jsonify(response_data)
@@ -67,8 +79,13 @@ def shorten_url():
     else:
         return jsonify({"error": "Unable to generate unique code"}), 500
     
+    # Calculate expiration
+    expires_at = None
+    if expires_in_days:
+        expires_at = datetime.utcnow() + timedelta(days=expires_in_days)
+    
     try:
-        url_obj = URL(original_url=original_url, short_code=short_code)
+        url_obj = URL(original_url=original_url, short_code=short_code, expires_at=expires_at)
         db.session.add(url_obj)
         db.session.commit()
         
@@ -91,6 +108,24 @@ def redirect_url(code):
         404 JSON error response if code not found
     """
     url_obj = URL.query.filter_by(short_code=code).first()
-    if url_obj:
-        return redirect(url_obj.original_url)
-    return jsonify({"error": "URL not found"}), 404
+    if not url_obj:
+        return jsonify({"error": "URL not found"}), 404
+        
+    if url_obj.is_expired():
+        return jsonify({"error": "URL has expired"}), 410
+    
+    # Track analytics
+    analytics = ClickAnalytics(
+        url_id=url_obj.id,
+        ip_address=request.remote_addr,
+        user_agent=request.headers.get('User-Agent', ''),
+        referrer=request.headers.get('Referer', '')
+    )
+    
+    # Update click count
+    url_obj.click_count += 1
+    
+    db.session.add(analytics)
+    db.session.commit()
+    
+    return redirect(url_obj.original_url)
