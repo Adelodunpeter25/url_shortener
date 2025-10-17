@@ -1,7 +1,13 @@
 [project]
 name = "url-shortener"
 version = "0.1.0"
-description = "Add your description here"
+description = "A simple URL shortener service built with Flask"
 readme = "README.md"
 requires-python = ">=3.9"
-dependencies = []
+dependencies = [
+    "flask>=2.3.0",
+    "flask-sqlalchemy>=3.0.0",
+    "marshmallow>=3.19.0",
+    "flask-limiter>=3.0.0",
+    "python-dotenv>=1.0.0",
+]
