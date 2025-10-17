@@ -4,27 +4,10 @@ A feature-rich Flask-based URL shortener service with analytics, QR codes, bulk 
 
 ## Features
 
-### Core Features
-- ✅ URL shortening with Base62 encoding
-- ✅ URL redirection with click tracking
-- ✅ SQLite database with SQLAlchemy ORM
-- ✅ Duplicate prevention
-- ✅ URL expiration (1-365 days)
-
-### Advanced Features
-- ✅ Bulk URL shortening (up to 100 URLs)
-- ✅ Click analytics with detailed tracking
-- ✅ QR code generation
-- ✅ URL validation and reachability checks
-- ✅ Malicious URL detection
-- ✅ Password protection (optional)
-- ✅ Rate limiting (10/min for shortening, 100/hour global)
-
-### Security & Performance
-- ✅ Input validation with Marshmallow
-- ✅ Error handling with proper HTTP codes
-- ✅ Environment configuration
-- ✅ Comprehensive logging and documentation
+✅ **Core**: URL shortening, Base62 encoding, expiration, click tracking, SQLite database  
+✅ **Advanced**: Bulk operations (100 URLs), QR codes, analytics, password protection  
+✅ **Security**: URL validation, malicious detection, rate limiting, input validation  
+✅ **Performance**: Proper error handling, environment config, comprehensive docs
 
 ## Setup
 
@@ -48,203 +31,47 @@ Server runs on `http://localhost:5000`
 
 ## API Endpoints
 
-### Core Endpoints
-
-#### Get API Information
-```bash
-GET /
-```
-
-#### Shorten URL
-```bash
-POST /shorten
-Content-Type: application/json
-
-{
-  "url": "https://example.com",
-  "expires_in_days": 30,  // Optional (1-365 days)
-  "password": "secret123"  // Optional password protection
-}
-```
-
-#### Redirect to Original URL
-```bash
-GET /<code>
-```
-
-#### Verify Password for Protected URL
-```bash
-POST /verify/<code>
-Content-Type: application/json
-
-{
-  "password": "secret123"
-}
-```
-
-### Advanced Endpoints
-
-#### Bulk URL Shortening
-```bash
-POST /bulk-shorten
-Content-Type: application/json
-
-{
-  "urls": [
-    {"url": "https://example.com", "expires_in_days": 30},
-    {"url": "https://google.com"}
-  ]
-}
-```
-
-#### Generate QR Code
-```bash
-GET /qr/<code>
-```
-Returns base64 encoded QR code image.
-
-#### Get Analytics
-```bash
-GET /analytics/<code>
-```
-Returns click statistics and analytics data.
+- `GET /` - API information
+- `POST /shorten` - Create short URL
+- `GET /<code>` - Redirect to original URL
+- `POST /verify/<code>` - Verify password for protected URL
+- `POST /bulk-shorten` - Bulk URL shortening
+- `GET /qr/<code>` - Generate QR code
+- `GET /analytics/<code>` - View click analytics
 
 ## Usage Examples
 
-### Basic URL Shortening
 ```bash
-curl -X POST http://localhost:5000/shorten \
-  -H "Content-Type: application/json" \
-  -d '{"url": "https://example.com"}'
-```
+# Basic shortening
+curl -X POST http://localhost:5000/shorten -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com", "expires_in_days": 30, "password": "secret"}'
 
-### URL with Expiration
-```bash
-curl -X POST http://localhost:5000/shorten \
-  -H "Content-Type: application/json" \
-  -d '{"url": "https://example.com", "expires_in_days": 7}'
-```
-
-### Bulk Shortening
-```bash
-curl -X POST http://localhost:5000/bulk-shorten \
-  -H "Content-Type: application/json" \
+# Bulk shortening
+curl -X POST http://localhost:5000/bulk-shorten -H "Content-Type: application/json" \
   -d '{"urls": [{"url": "https://example.com"}, {"url": "https://google.com"}]}'
-```
 
-### Get QR Code
-```bash
-curl http://localhost:5000/qr/abc123
-```
-
-### View Analytics
-```bash
-curl http://localhost:5000/analytics/abc123
-```
-
-### Password Protected URL
-```bash
-# Create password protected URL
-curl -X POST http://localhost:5000/shorten \
-  -H "Content-Type: application/json" \
-  -d '{"url": "https://example.com", "password": "secret123"}'
-
-# Access protected URL (returns password prompt)
-curl http://localhost:5000/abc123
-
-# Verify password
-curl -X POST http://localhost:5000/verify/abc123 \
-  -H "Content-Type: application/json" \
-  -d '{"password": "secret123"}'
+# Password verification
+curl -X POST http://localhost:5000/verify/abc123 -H "Content-Type: application/json" \
+  -d '{"password": "secret"}'
 ```
 
 ## Response Examples
 
-### Successful URL Shortening
-```json
-{
-  "id": 1,
-  "original_url": "https://example.com",
-  "short_code": "abc123",
-  "short_url": "http://localhost:5000/abc123",
-  "created_at": "2024-01-01T12:00:00",
-  "expires_at": "2024-01-31T12:00:00",
-  "click_count": 0,
-  "has_password": true
-}
-```
+**URL Creation**: `{"short_url": "http://localhost:5000/abc123", "has_password": true, "expires_at": "2024-01-31T12:00:00"}`  
+**Password Required**: `{"password_required": true, "verify_url": "http://localhost:5000/verify/abc123"}`  
+**Analytics**: `{"click_count": 42, "recent_clicks": 15, "is_expired": false}`  
+**QR Code**: `{"qr_code": "data:image/png;base64,...", "short_url": "..."}`
 
-### Password Protected URL Access
-```json
-{
-  "password_required": true,
-  "message": "This URL is password protected",
-  "verify_url": "http://localhost:5000/verify/abc123"
-}
-```
+## Configuration & Details
 
-### Analytics Response
-```json
-{
-  "short_code": "abc123",
-  "original_url": "https://example.com",
-  "click_count": 42,
-  "created_at": "2024-01-01T12:00:00",
-  "expires_at": "2024-01-31T12:00:00",
-  "is_expired": false,
-  "recent_clicks": 15
-}
-```
+**Environment**: Copy `.env.example` to `.env` and configure `DATABASE_URL`, `SECRET_KEY`  
 
-### QR Code Response
-```json
-{
-  "qr_code": "data:image/png;base64,iVBOR...",
-  "short_url": "http://localhost:5000/abc123",
-  "original_url": "https://example.com"
-}
-```
+**Database**: SQLite with SQLAlchemy ORM
 
-## Configuration
+**Rate Limiting**: Flask-Limiter for IP-based limits
 
-### Environment Variables (.env)
-```bash
-DATABASE_URL=sqlite:///url_shortener.db
-FLASK_ENV=development
-SECRET_KEY=your-secret-key-here
-```
+**Validation**: Marshmallow schemas for request/response validation
 
-### Rate Limits
-- **URL Shortening**: 10 requests per minute per IP
-- **Global**: 100 requests per hour per IP
-- **Bulk Operations**: Same as single shortening
-
-## Security Features
-
-- **URL Validation**: Checks if URLs are reachable
-- **Malicious URL Detection**: Basic blacklist and keyword filtering
-- **Password Protection**: Optional password security for URLs
-- **Rate Limiting**: Prevents abuse and spam
-- **Input Validation**: Comprehensive request validation
-- **Expiration Handling**: Automatic cleanup of expired URLs
-
-## Analytics Tracking
-
-- **Click Count**: Total clicks per URL
-- **Timestamps**: When each click occurred
-- **IP Addresses**: Visitor tracking
-- **User Agents**: Browser/device information
-- **Referrers**: Traffic source tracking
-- **Recent Activity**: Last 7 days summary
-
-## Error Handling
-
-- **400**: Invalid URL or validation error
-- **401**: Password required for protected URL
-- **404**: Short code not found
-- **410**: URL has expired
-- **429**: Rate limit exceeded
-- **500**: Server/database error
 
 ## Project Structure
 
