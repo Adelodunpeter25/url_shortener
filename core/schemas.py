@@ -1,6 +1,44 @@
 """Marshmallow schemas for request/response validation."""
 from marshmallow import Schema, fields, validate
 
+class UserRegistrationSchema(Schema):
+    """Schema for user registration requests.
+    
+    Fields:
+        username: Required unique username (3-80 characters)
+        email: Required valid email address
+        password: Required password (6+ characters)
+    """
+    username = fields.Str(required=True, validate=validate.Length(min=3, max=80))
+    email = fields.Email(required=True)
+    password = fields.Str(required=True, validate=validate.Length(min=6))
+
+class UserLoginSchema(Schema):
+    """Schema for user login requests.
+    
+    Fields:
+        username: Required username or email
+        password: Required password
+    """
+    username = fields.Str(required=True)
+    password = fields.Str(required=True)
+
+class UserResponseSchema(Schema):
+    """Schema for user response data.
+    
+    Fields:
+        id: User ID
+        username: Username
+        email: Email address
+        created_at: Account creation timestamp
+        url_count: Number of URLs owned by user
+    """
+    id = fields.Int()
+    username = fields.Str()
+    email = fields.Str()
+    created_at = fields.DateTime()
+    url_count = fields.Int()
+
 class URLCreateSchema(Schema):
     """Schema for validating URL creation requests.
     

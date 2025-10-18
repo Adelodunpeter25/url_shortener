@@ -80,7 +80,7 @@ def bulk_shorten_urls():
     
     try:
         db.session.commit()
-    except Exception as e:
+    except Exception:
         db.session.rollback()
         return jsonify({"error": "Database error during bulk operation"}), 500
     

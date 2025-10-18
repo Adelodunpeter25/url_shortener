@@ -14,3 +14,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     RATELIMIT_STORAGE_URL = 'memory://'
     RATELIMIT_DEFAULT = '100 per hour'
+    
+    # Flask-Login settings
+    LOGIN_VIEW = 'auth.login'
+    LOGIN_MESSAGE = 'Please log in to access this page.'

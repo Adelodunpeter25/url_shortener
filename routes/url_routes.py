@@ -2,11 +2,11 @@
 from flask import Blueprint, request, redirect, jsonify
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_login import current_user
 from core.models import db, URL, ClickAnalytics
 from core.schemas import URLCreateSchema, URLResponseSchema, BulkURLCreateSchema
 from utils.url_generator import generate_short_code
 from utils.validators import is_url_reachable, is_malicious_url
-from utils.qr_generator import generate_qr_code
 from marshmallow import ValidationError
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timedelta
@@ -86,7 +86,9 @@ def shorten_url():
         expires_at = datetime.utcnow() + timedelta(days=expires_in_days)
     
     try:
-        url_obj = URL(original_url=original_url, short_code=short_code, expires_at=expires_at, password=password)
+        # Associate URL with current user if logged in
+        user_id = current_user.id if current_user.is_authenticated else None
+        url_obj = URL(original_url=original_url, short_code=short_code, expires_at=expires_at, password=password, user_id=user_id)
         db.session.add(url_obj)
         db.session.commit()
         

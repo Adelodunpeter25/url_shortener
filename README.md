@@ -6,6 +6,7 @@ A feature-rich Flask-based URL shortener service with analytics, QR codes, bulk 
 
 ✅ **Core**: URL shortening, Base62 encoding, expiration, click tracking, SQLite database  
 ✅ **Advanced**: Bulk operations (100 URLs), QR codes, analytics, password protection  
+✅ **User System**: Registration, login, personal dashboards, URL ownership, user management  
 ✅ **Security**: URL validation, malicious detection, rate limiting, input validation  
 ✅ **Performance**: Proper error handling, environment config, comprehensive docs
 
@@ -29,26 +30,30 @@ uv run python main.py
 
 Server runs on `http://localhost:5000`
 
-## API Endpoints
-
-- `GET /` - API information
-- `POST /shorten` - Create short URL
-- `GET /<code>` - Redirect to original URL
-- `POST /verify/<code>` - Verify password for protected URL
-- `POST /bulk-shorten` - Bulk URL shortening
-- `GET /qr/<code>` - Generate QR code
-- `GET /analytics/<code>` - View click analytics
-
 ## Usage Examples
 
 ```bash
-# Basic shortening
+# User Registration
+curl -X POST http://localhost:5000/auth/register -H "Content-Type: application/json" \
+  -d '{"username": "john", "email": "john@example.com", "password": "secret123"}'
+
+# User Login
+curl -X POST http://localhost:5000/auth/login -H "Content-Type: application/json" \
+  -d '{"username": "john", "password": "secret123"}'
+
+# Basic URL shortening
 curl -X POST http://localhost:5000/shorten -H "Content-Type: application/json" \
   -d '{"url": "https://example.com", "expires_in_days": 30, "password": "secret"}'
 
 # Bulk shortening
 curl -X POST http://localhost:5000/bulk-shorten -H "Content-Type: application/json" \
   -d '{"urls": [{"url": "https://example.com"}, {"url": "https://google.com"}]}'
+
+# User Dashboard
+curl -X GET http://localhost:5000/auth/dashboard -H "Cookie: session=<session_cookie>"
+
+# User's URLs
+curl -X GET http://localhost:5000/user/my-urls -H "Cookie: session=<session_cookie>"
 
 # Password verification
 curl -X POST http://localhost:5000/verify/abc123 -H "Content-Type: application/json" \
@@ -81,28 +86,21 @@ url_shortener/
 │   ├── config.py      # Configuration management
 │   ├── models.py      # Database models
 │   └── schemas.py     # Request/response validation
-├── routes/
-│   ├── url_routes.py  # Core URL endpoints
-│   └── bulk_routes.py # Bulk operations & features
-├── utils/
-│   ├── url_generator.py # Base62 code generation
-│   ├── validators.py    # URL validation & security
-│   └── qr_generator.py  # QR code generation
+├── routes/            # API endpoints
+├── utils/             # Utility functions
 ├── main.py            # Application entry point
 ├── .env.example       # Environment template
-└── README.md          # This file
+└── README.md          # Documentation
 ```
 
 ## Dependencies
 
 - **Flask**: Web framework
 - **Flask-SQLAlchemy**: Database ORM
+- **Flask-Login**: User session management
 - **Marshmallow**: Serialization/validation
 - **Flask-Limiter**: Rate limiting
 - **QRCode[PIL]**: QR code generation
 - **Requests**: URL validation
+- **Werkzeug**: Password hashing
 - **Python-dotenv**: Environment management
-
-## License
-
-MIT License
