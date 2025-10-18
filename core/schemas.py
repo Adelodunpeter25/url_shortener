@@ -74,8 +74,8 @@ class URLCreateSchema(Schema):
         password: Optional password protection
     """
     url = fields.Url(required=True, validate=validate.Length(min=1, max=2048))
-    expires_in_days = fields.Int(validate=validate.Range(min=1, max=365), missing=None)
-    password = fields.Str(validate=validate.Length(min=1, max=255), missing=None)
+    expires_in_days = fields.Int(validate=validate.Range(min=1, max=365), allow_none=True)
+    password = fields.Str(validate=validate.Length(min=1, max=255), allow_none=True)
 
 class BulkURLCreateSchema(Schema):
     """Schema for bulk URL creation requests.
