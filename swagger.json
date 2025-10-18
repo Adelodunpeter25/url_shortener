@@ -1,0 +1,454 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "URL Shortener API",
+    "description": "A feature-rich URL shortener service with analytics, QR codes, bulk operations, and security features",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000",
+      "description": "Development server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "API Key"
+      },
+      "SessionAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "session"
+      }
+    },
+    "schemas": {
+      "URLCreate": {
+        "type": "object",
+        "required": ["url"],
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "The URL to shorten"
+          },
+          "expires_in_days": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 365,
+            "description": "Optional expiration in days"
+          },
+          "password": {
+            "type": "string",
+            "description": "Optional password protection"
+          }
+        }
+      },
+      "URLResponse": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "integer"},
+          "original_url": {"type": "string"},
+          "short_code": {"type": "string"},
+          "short_url": {"type": "string"},
+          "created_at": {"type": "string", "format": "date-time"},
+          "expires_at": {"type": "string", "format": "date-time"},
+          "click_count": {"type": "integer"},
+          "has_password": {"type": "boolean"}
+        }
+      },
+      "UserRegistration": {
+        "type": "object",
+        "required": ["username", "email", "password"],
+        "properties": {
+          "username": {"type": "string", "minLength": 3, "maxLength": 80},
+          "email": {"type": "string", "format": "email"},
+          "password": {"type": "string", "minLength": 6}
+        }
+      },
+      "UserLogin": {
+        "type": "object",
+        "required": ["username", "password"],
+        "properties": {
+          "username": {"type": "string"},
+          "password": {"type": "string"}
+        }
+      },
+      "APIKeyCreate": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": {"type": "string", "maxLength": 100}
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {"type": "string"}
+        }
+      }
+    }
+  },
+  "paths": {
+    "/": {
+      "get": {
+        "tags": ["Core"],
+        "summary": "API Information",
+        "responses": {
+          "200": {
+            "description": "API information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {"type": "string"},
+                    "endpoints": {"type": "object"}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/shorten": {
+      "post": {
+        "tags": ["Core"],
+        "summary": "Shorten URL",
+        "security": [{"BearerAuth": []}, {"SessionAuth": []}, {}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/URLCreate"}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "URL shortened successfully",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/URLResponse"}
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/Error"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{code}": {
+      "get": {
+        "tags": ["Core"],
+        "summary": "Redirect to original URL",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "302": {"description": "Redirect to original URL"},
+          "401": {"description": "Password required"},
+          "404": {"description": "URL not found"},
+          "410": {"description": "URL expired"}
+        }
+      }
+    },
+    "/verify/{code}": {
+      "post": {
+        "tags": ["Core"],
+        "summary": "Verify password for protected URL",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["password"],
+                "properties": {
+                  "password": {"type": "string"}
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "302": {"description": "Redirect to original URL"},
+          "401": {"description": "Incorrect password"}
+        }
+      }
+    },
+    "/bulk-shorten": {
+      "post": {
+        "tags": ["Bulk Operations"],
+        "summary": "Bulk URL shortening",
+        "security": [{"BearerAuth": []}, {"SessionAuth": []}, {}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["urls"],
+                "properties": {
+                  "urls": {
+                    "type": "array",
+                    "items": {"$ref": "#/components/schemas/URLCreate"},
+                    "maxItems": 100
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bulk operation completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {"$ref": "#/components/schemas/URLResponse"}
+                    },
+                    "errors": {"type": "array", "items": {"type": "string"}},
+                    "total_processed": {"type": "integer"},
+                    "successful": {"type": "integer"},
+                    "failed": {"type": "integer"}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/qr/{code}": {
+      "get": {
+        "tags": ["Analytics & QR"],
+        "summary": "Generate QR code",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "QR code generated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "qr_code": {"type": "string"},
+                    "short_url": {"type": "string"},
+                    "original_url": {"type": "string"}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analytics/{code}": {
+      "get": {
+        "tags": ["Analytics & QR"],
+        "summary": "Get URL analytics",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Analytics data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "short_code": {"type": "string"},
+                    "original_url": {"type": "string"},
+                    "click_count": {"type": "integer"},
+                    "created_at": {"type": "string"},
+                    "expires_at": {"type": "string"},
+                    "is_expired": {"type": "boolean"},
+                    "recent_clicks": {"type": "integer"}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Register new user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/UserRegistration"}
+            }
+          }
+        },
+        "responses": {
+          "201": {"description": "User registered successfully"},
+          "400": {"description": "Registration failed"}
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "User login",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/UserLogin"}
+            }
+          }
+        },
+        "responses": {
+          "200": {"description": "Login successful"},
+          "401": {"description": "Invalid credentials"}
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "User logout",
+        "security": [{"SessionAuth": []}],
+        "responses": {
+          "200": {"description": "Logout successful"}
+        }
+      }
+    },
+    "/auth/dashboard": {
+      "get": {
+        "tags": ["User Management"],
+        "summary": "User dashboard",
+        "security": [{"SessionAuth": []}],
+        "responses": {
+          "200": {"description": "Dashboard data"}
+        }
+      }
+    },
+    "/user/my-urls": {
+      "get": {
+        "tags": ["User Management"],
+        "summary": "Get user's URLs",
+        "security": [{"SessionAuth": []}],
+        "responses": {
+          "200": {"description": "User's URLs"}
+        }
+      }
+    },
+    "/api/keys": {
+      "post": {
+        "tags": ["API Keys"],
+        "summary": "Create API key",
+        "security": [{"SessionAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/APIKeyCreate"}
+            }
+          }
+        },
+        "responses": {
+          "201": {"description": "API key created"},
+          "400": {"description": "Maximum keys reached"}
+        }
+      },
+      "get": {
+        "tags": ["API Keys"],
+        "summary": "List API keys",
+        "security": [{"SessionAuth": []}],
+        "responses": {
+          "200": {"description": "API keys list"}
+        }
+      }
+    },
+    "/api/test": {
+      "get": {
+        "tags": ["API Keys"],
+        "summary": "Test API key",
+        "security": [{"BearerAuth": []}],
+        "responses": {
+          "200": {"description": "API key valid"},
+          "401": {"description": "Invalid API key"}
+        }
+      }
+    },
+    "/admin/stats": {
+      "get": {
+        "tags": ["Admin Panel"],
+        "summary": "System statistics",
+        "security": [{"SessionAuth": []}],
+        "responses": {
+          "200": {"description": "System stats"},
+          "403": {"description": "Admin access required"}
+        }
+      }
+    },
+    "/admin/users": {
+      "get": {
+        "tags": ["Admin Panel"],
+        "summary": "List all users",
+        "security": [{"SessionAuth": []}],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {"type": "integer", "default": 1}
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "schema": {"type": "integer", "default": 20, "maximum": 100}
+          }
+        ],
+        "responses": {
+          "200": {"description": "Users list"},
+          "403": {"description": "Admin access required"}
+        }
+      }
+    }
+  }
+}

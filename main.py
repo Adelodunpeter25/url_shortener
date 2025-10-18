@@ -1,6 +1,7 @@
 """Flask URL shortener application entry point."""
-from flask import Flask
+from flask import Flask, send_from_directory
 from flask_login import LoginManager
+
 from core.config import Config
 from core.models import db, User
 from routes.url_routes import url_bp, limiter
@@ -9,6 +10,8 @@ from routes.auth_routes import auth_bp
 from routes.user_routes import user_bp
 from routes.admin_routes import admin_bp
 from routes.api_routes import api_bp
+import json
+import os
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -25,6 +28,40 @@ login_manager.login_view = 'auth.login'
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
+# Swagger JSON endpoint
+@app.route('/swagger.json')
+def swagger_json():
+    """Serve swagger.json file."""
+    return send_from_directory('.', 'swagger.json')
+
+# Swagger UI endpoint
+@app.route('/docs/')
+def swagger_ui():
+    """Serve Swagger UI."""
+    return '''
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>URL Shortener API Documentation</title>
+        <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@3.52.5/swagger-ui.css" />
+    </head>
+    <body>
+        <div id="swagger-ui"></div>
+        <script src="https://unpkg.com/swagger-ui-dist@3.52.5/swagger-ui-bundle.js"></script>
+        <script>
+            SwaggerUIBundle({
+                url: '/swagger.json',
+                dom_id: '#swagger-ui',
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIBundle.presets.standalone
+                ]
+            });
+        </script>
+    </body>
+    </html>
+    '''
 
 # Register blueprints
 app.register_blueprint(url_bp)

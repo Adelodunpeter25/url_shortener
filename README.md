@@ -1,6 +1,6 @@
 # URL Shortener
 
-A feature-rich Flask-based URL shortener service with analytics, QR codes, bulk operations, and security features.
+A feature-rich Flask-based URL shortener application with analytics, QR codes, bulk operations, and security features.
 
 ## Features
 
@@ -66,6 +66,7 @@ curl -X POST http://localhost:5000/api/keys -H "Content-Type: application/json" 
 # Use API key for URL shortening
 curl -X POST http://localhost:5000/shorten -H "Authorization: Bearer <api_key>" \
   -H "Content-Type: application/json" -d '{"url": "https://example.com"}'
+```
 
 ## Response Examples
 
