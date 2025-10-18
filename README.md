@@ -6,9 +6,9 @@ A feature-rich Flask-based URL shortener service with analytics, QR codes, bulk 
 
 ✅ **Core**: URL shortening, Base62 encoding, expiration, click tracking, SQLite database  
 ✅ **Advanced**: Bulk operations (100 URLs), QR codes, analytics, password protection  
-✅ **User System**: Registration, login, personal dashboards, URL ownership, user management  
-✅ **Security**: URL validation, malicious detection, rate limiting, input validation  
-✅ **Performance**: Proper error handling, environment config, comprehensive docs
+✅ **User System**: Registration, login, personal dashboards, URL ownership, user management   
+✅ **API Access**: API key authentication, programmatic access, multiple auth methods  
+✅ **Security**: URL validation, malicious detection, rate limiting, input validation 
 
 ## Setup
 
@@ -58,7 +58,14 @@ curl -X GET http://localhost:5000/user/my-urls -H "Cookie: session=<session_cook
 # Password verification
 curl -X POST http://localhost:5000/verify/abc123 -H "Content-Type: application/json" \
   -d '{"password": "secret"}'
-```
+
+# Create API key
+curl -X POST http://localhost:5000/api/keys -H "Content-Type: application/json" \
+  -H "Cookie: session=<session_cookie>" -d '{"name": "My API Key"}'
+
+# Use API key for URL shortening
+curl -X POST http://localhost:5000/shorten -H "Authorization: Bearer <api_key>" \
+  -H "Content-Type: application/json" -d '{"url": "https://example.com"}'
 
 ## Response Examples
 

@@ -7,6 +7,8 @@ from routes.url_routes import url_bp, limiter
 from routes.bulk_routes import bulk_bp
 from routes.auth_routes import auth_bp
 from routes.user_routes import user_bp
+from routes.admin_routes import admin_bp
+from routes.api_routes import api_bp
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -29,6 +31,8 @@ app.register_blueprint(url_bp)
 app.register_blueprint(bulk_bp)
 app.register_blueprint(auth_bp, url_prefix='/auth')
 app.register_blueprint(user_bp, url_prefix='/user')
+app.register_blueprint(admin_bp, url_prefix='/admin')
+app.register_blueprint(api_bp, url_prefix='/api')
 
 with app.app_context():
     db.create_all()

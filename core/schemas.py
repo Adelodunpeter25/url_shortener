@@ -39,6 +39,32 @@ class UserResponseSchema(Schema):
     created_at = fields.DateTime()
     url_count = fields.Int()
 
+class APIKeyCreateSchema(Schema):
+    """Schema for API key creation requests.
+    
+    Fields:
+        name: Human-readable name for the API key
+    """
+    name = fields.Str(required=True, validate=validate.Length(min=1, max=100))
+
+class APIKeyResponseSchema(Schema):
+    """Schema for API key response data.
+    
+    Fields:
+        id: API key ID
+        name: API key name
+        key: API key string (only shown on creation)
+        created_at: Creation timestamp
+        last_used: Last usage timestamp
+        is_active: Whether key is active
+    """
+    id = fields.Int()
+    name = fields.Str()
+    key = fields.Str()
+    created_at = fields.DateTime()
+    last_used = fields.DateTime()
+    is_active = fields.Bool()
+
 class URLCreateSchema(Schema):
     """Schema for validating URL creation requests.
     

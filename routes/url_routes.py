@@ -3,6 +3,7 @@ from flask import Blueprint, request, redirect, jsonify
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_login import current_user
+from utils.auth import api_key_or_login_required
 from core.models import db, URL, ClickAnalytics
 from core.schemas import URLCreateSchema, URLResponseSchema, BulkURLCreateSchema
 from utils.url_generator import generate_short_code
@@ -86,8 +87,17 @@ def shorten_url():
         expires_at = datetime.utcnow() + timedelta(days=expires_in_days)
     
     try:
-        # Associate URL with current user if logged in
-        user_id = current_user.id if current_user.is_authenticated else None
+        # Associate URL with current user if logged in or using API key
+        user_id = None
+        if current_user.is_authenticated:
+            user_id = current_user.id
+        elif hasattr(request, 'headers') and 'Authorization' in request.headers:
+            # Check for API key authentication
+            from utils.auth import api_key_or_login_required
+            from flask import g
+            if hasattr(g, 'current_user'):
+                user_id = g.current_user.id
+        
         url_obj = URL(original_url=original_url, short_code=short_code, expires_at=expires_at, password=password, user_id=user_id)
         db.session.add(url_obj)
         db.session.commit()
