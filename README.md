@@ -68,13 +68,6 @@ curl -X POST http://localhost:5000/shorten -H "Authorization: Bearer <api_key>" 
   -H "Content-Type: application/json" -d '{"url": "https://example.com"}'
 ```
 
-## Response Examples
-
-**URL Creation**: `{"short_url": "http://localhost:5000/abc123", "has_password": true, "expires_at": "2024-01-31T12:00:00"}`  
-**Password Required**: `{"password_required": true, "verify_url": "http://localhost:5000/verify/abc123"}`  
-**Analytics**: `{"click_count": 42, "recent_clicks": 15, "is_expired": false}`  
-**QR Code**: `{"qr_code": "data:image/png;base64,...", "short_url": "..."}`
-
 ## Configuration & Details
 
 **Environment**: Copy `.env.example` to `.env` and configure `DATABASE_URL`, `SECRET_KEY`  
@@ -112,3 +105,7 @@ url_shortener/
 - **Requests**: URL validation
 - **Werkzeug**: Password hashing
 - **Python-dotenv**: Environment management
+
+## Project Reference
+
+This project is modeled after the [Url Shortening Service](https://roadmap.sh/projects/url-shortening-service) project from [roadmap.sh](https://roadmap.sh).
